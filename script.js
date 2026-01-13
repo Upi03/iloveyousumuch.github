@@ -96,17 +96,47 @@ document.querySelectorAll('.photo-placeholder').forEach(placeholder => {
     placeholder.title = 'Klik untuk menambahkan foto';
 });
 
-// Audio player enhancement
-document.querySelectorAll('audio').forEach(audio => {
-    audio.addEventListener('play', function() {
-        // Pause other audio when one starts playing
-        document.querySelectorAll('audio').forEach(otherAudio => {
-            if (otherAudio !== this && !otherAudio.paused) {
-                otherAudio.pause();
-            }
-        });
+// YouTube player enhancement - pause other videos when one plays
+let youtubePlayers = [];
+
+// Initialize YouTube API when available
+function onYouTubeIframeAPIReady() {
+    const iframes = document.querySelectorAll('.youtube-player iframe');
+    iframes.forEach((iframe, index) => {
+        try {
+            const player = new YT.Player(iframe, {
+                events: {
+                    'onStateChange': function(event) {
+                        // When a video starts playing, pause others
+                        if (event.data === YT.PlayerState.PLAYING) {
+                            youtubePlayers.forEach((otherPlayer, otherIndex) => {
+                                if (otherIndex !== index && otherPlayer && typeof otherPlayer.pauseVideo === 'function') {
+                                    otherPlayer.pauseVideo();
+                                }
+                            });
+                        }
+                    }
+                }
+            });
+            youtubePlayers.push(player);
+        } catch (e) {
+            console.log('YouTube API not loaded yet');
+        }
     });
-});
+}
+
+// Load YouTube IFrame API
+if (typeof YT === 'undefined') {
+    const tag = document.createElement('script');
+    tag.src = "https://www.youtube.com/iframe_api";
+    const firstScriptTag = document.getElementsByTagName('script')[0];
+    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+    
+    // Set callback when API is ready
+    window.onYouTubeIframeAPIReady = onYouTubeIframeAPIReady;
+} else {
+    onYouTubeIframeAPIReady();
+}
 
 // Add parallax effect on scroll
 window.addEventListener('scroll', () => {
